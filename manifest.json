@@ -23,7 +23,7 @@
    "version_name": "2.3.0",
    "default_locale": "en",
    "minimum_chrome_version": "88",
-   "description": "ChromiumOS default calculator, fixed by Alex313031!",
+   "description": "__MSG_Calc_Message_Description__",
    "offline_enabled": true,
    "permissions": [ "clipboardRead", "clipboardWrite", "contextMenus" ]
 }

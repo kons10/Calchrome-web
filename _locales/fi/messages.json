@@ -300,8 +300,56 @@
       "description": "Calculator name of application for performing simple calculations",
       "message": "Laskin"
    },
-   "NumberFormatter_Message_NaN": {
+   "Calc_Message_Description": {
+      "description": "Calculator description",
+      "message": "ChromiumOS default calculator, fixed by Alex313031!"
+   },
+   "Calc_Message_ShortName": {
+      "description": "Calculator short name of application for performing simple calculations",
+      "message": "Calculator"
+   },
+   "NumberFormatter_Message_nan": {
       "description": "NumberFormatter description of a value that isn't a number",
-      "message": "Ei ole numero"
+      "message": "Not a number"
+   },
+   "NumericProperty__Message_errorAboveMaximum": {
+      "description": "NumericProperty_ ",
+      "message": "The value can be at most $max$.",
+      "placeholders": {
+         "max": {
+            "content": "$1"
+         }
+      }
+   },
+   "NumericProperty__Message_errorBelowMinimum": {
+      "description": "NumericProperty_ ",
+      "message": "The value must be at least $min$.",
+      "placeholders": {
+         "min": {
+            "content": "$1"
+         }
+      }
+   },
+   "StringProperty_Message_errorAboveMaxLength": {
+      "description": "StringProperty ",
+      "message": "The text is too long. Maximum: $max$",
+      "placeholders": {
+         "max": {
+            "content": "$1"
+         }
+      }
+   },
+   "StringProperty_Message_errorBelowMinLength": {
+      "description": "StringProperty ",
+      "message": "The text is too short. Minimum: $min$",
+      "placeholders": {
+         "min": {
+            "content": "$1"
+         }
+      }
+   },
+   "StringProperty_Message_errorPatternMismatch": {
+      "description": "StringProperty ",
+      "message": "The text does not match the pattern."
    }
 }
