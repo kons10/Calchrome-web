@@ -77,13 +77,21 @@
             --md-outlined-button-label-text-size: clamp(14px, 5vw, 20px);
             width: 100%;
             height: 100%;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
         
-        md-outlined-button {
-            --md-outlined-button-container-height: 100%;
-            --md-outlined-button-label-text-size: clamp(14px, 5vw, 20px);
-            width: 100%;
-            height: 100%;
+        md-outlined-button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        md-outlined-button:active {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        md-outlined-button:focus-visible {
+            outline: 2px solid #2196f3;
+            outline-offset: 2px;
         }
         
         .operator-btn {
@@ -213,6 +221,11 @@
             }
             
             inputNumber(num) {
+                // 最大入力桁数の制限（15 桁）
+                if (this.currentValue.replace('.', '').replace('-', '').length >= 15) {
+                    return;
+                }
+                
                 if (this.shouldResetScreen) {
                     this.currentValue = num;
                     this.shouldResetScreen = false;
@@ -277,6 +290,10 @@
             }
             
             backspace() {
+                if (this.currentValue === 'Error') {
+                    this.clear();
+                    return;
+                }
                 if (this.currentValue.length > 1) {
                     this.currentValue = this.currentValue.slice(0, -1);
                 } else {
@@ -316,10 +333,24 @@
                         return;
                 }
                 
-                // 小数点以下の処理
-                result = Math.round(result * 1000000000) / 1000000000;
+                // 無限小数・浮動小数点誤差の処理
+                if (!Number.isFinite(result)) {
+                    this.currentValue = 'Error';
+                    this.previousValue = '';
+                    this.operator = null;
+                    this.updateDisplay();
+                    return;
+                }
                 
-                this.currentValue = String(result);
+                // 有効数字 12 桁に制限
+                const absResult = Math.abs(result);
+                if (absResult !== 0 && (absResult >= 1e12 || absResult < 1e-9)) {
+                    this.currentValue = result.toExponential(8);
+                } else {
+                    result = Math.round(result * 1e12) / 1e12;
+                    this.currentValue = String(result);
+                }
+                
                 this.previousValue = '';
                 this.operator = null;
                 this.shouldResetScreen = true;
@@ -327,12 +358,16 @@
             }
             
             percent() {
-                this.currentValue = String(parseFloat(this.currentValue) / 100);
+                const value = parseFloat(this.currentValue);
+                if (isNaN(value)) return;
+                this.currentValue = String(value / 100);
                 this.updateDisplay();
             }
             
             negate() {
-                this.currentValue = String(parseFloat(this.currentValue) * -1);
+                const value = parseFloat(this.currentValue);
+                if (isNaN(value)) return;
+                this.currentValue = String(value * -1);
                 this.updateDisplay();
             }
             
@@ -349,6 +384,11 @@
             
             formatNumber(num) {
                 if (num === 'Error') return num;
+                
+                // 指数表記の場合はそのまま返す（カンマ区切りしない）
+                if (num.includes('e') || num.includes('E')) {
+                    return num;
+                }
                 
                 const parts = num.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
