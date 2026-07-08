@@ -1,7 +1,405 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Calculator</title>
-<script src="foam.js"></script>
-<body style="margin: 0">
-<foam id="calc" model="foam.apps.calc.Calc" view="foam.apps.calc.CalcView">
-</foam>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計算機アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .calculator-container {
+            background: #ffffff;
+            width: 100%;
+            height: 100%;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .display {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            text-align: right;
+            flex: 0 0 auto;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        .expression {
+            font-size: 12px;
+            color: #666;
+            min-height: 16px;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        
+        .result {
+            font-size: clamp(24px, 8vw, 36px);
+            color: #333;
+            font-weight: bold;
+            word-break: break-all;
+            overflow-x: auto;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        
+        md-filled-button {
+            --md-filled-button-container-height: auto;
+            --md-filled-button-label-text-size: clamp(14px, 5vw, 20px);
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+        }
+        
+        md-outlined-button {
+            --md-outlined-button-container-height: auto;
+            --md-outlined-button-label-text-size: clamp(14px, 5vw, 20px);
+            width: 100%;
+            height: 100%;
+        }
+        
+        .operator-btn {
+            --md-filled-button-container-color: #ff9800;
+            --md-filled-button-label-text-color: #ffffff;
+        }
+        
+        .function-btn {
+            --md-filled-button-container-color: #607d8b;
+            --md-filled-button-label-text-color: #ffffff;
+        }
+        
+        .equals-btn {
+            --md-filled-button-container-color: #4caf50;
+            --md-filled-button-label-text-color: #ffffff;
+        }
+        
+        .clear-btn {
+            --md-filled-button-container-color: #f44336;
+            --md-filled-button-label-text-color: #ffffff;
+        }
+        
+
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="display">
+            <div class="expression" id="expression"></div>
+            <div class="result" id="result">0</div>
+        </div>
+        
+        <div class="buttons">
+            <md-filled-button class="clear-btn" data-action="clear">AC</md-filled-button>
+            <md-filled-button class="function-btn" data-action="backspace">⌫</md-filled-button>
+            <md-filled-button class="function-btn" data-action="percent">%</md-filled-button>
+            <md-filled-button class="operator-btn" data-action="operator" data-value="/">÷</md-filled-button>
+            
+            <md-filled-button data-value="7">7</md-filled-button>
+            <md-filled-button data-value="8">8</md-filled-button>
+            <md-filled-button data-value="9">9</md-filled-button>
+            <md-filled-button class="operator-btn" data-action="operator" data-value="*">×</md-filled-button>
+            
+            <md-filled-button data-value="4">4</md-filled-button>
+            <md-filled-button data-value="5">5</md-filled-button>
+            <md-filled-button data-value="6">6</md-filled-button>
+            <md-filled-button class="operator-btn" data-action="operator" data-value="-">−</md-filled-button>
+            
+            <md-filled-button data-value="1">1</md-filled-button>
+            <md-filled-button data-value="2">2</md-filled-button>
+            <md-filled-button data-value="3">3</md-filled-button>
+            <md-filled-button class="operator-btn" data-action="operator" data-value="+">+</md-filled-button>
+            
+            <md-filled-button data-action="negate">±</md-filled-button>
+            <md-filled-button data-value="0">0</md-filled-button>
+            <md-filled-button data-action="decimal">.</md-filled-button>
+            <md-filled-button class="equals-btn" data-action="equals">=</md-filled-button>
+        </div>
+    </div>
+
+    <script type="module" src="./mwc.js"></script>
+    <script>
+        // 計算機のロジック
+        class Calculator {
+            constructor() {
+                this.currentValue = '0';
+                this.previousValue = '';
+                this.operator = null;
+                this.shouldResetScreen = false;
+                
+                this.expressionEl = document.getElementById('expression');
+                this.resultEl = document.getElementById('result');
+                
+                this.init();
+            }
+            
+            init() {
+                // ボタンイベントのバインディング
+                document.querySelectorAll('md-filled-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handleButtonClick(button);
+                    });
+                });
+                
+                // キーボードサポート
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeyPress(e);
+                });
+                
+                this.updateDisplay();
+            }
+            
+            handleButtonClick(button) {
+                const value = button.getAttribute('data-value');
+                const action = button.getAttribute('data-action');
+                
+                if (value !== null) {
+                    this.inputNumber(value);
+                } else if (action) {
+                    this.handleAction(action, button.getAttribute('data-value'));
+                }
+            }
+            
+            handleKeyPress(e) {
+                const key = e.key;
+                
+                if (/[0-9]/.test(key)) {
+                    this.inputNumber(key);
+                } else if (key === '+') {
+                    this.setOperator('+');
+                } else if (key === '-') {
+                    this.setOperator('-');
+                } else if (key === '*' || key === 'x') {
+                    this.setOperator('*');
+                } else if (key === '/') {
+                    e.preventDefault();
+                    this.setOperator('/');
+                } else if (key === '.') {
+                    this.inputDecimal();
+                } else if (key === 'Enter' || key === '=') {
+                    e.preventDefault();
+                    this.calculate();
+                } else if (key === 'Backspace') {
+                    this.backspace();
+                } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                    this.clear();
+                } else if (key === '%') {
+                    this.percent();
+                }
+            }
+            
+            inputNumber(num) {
+                if (this.shouldResetScreen) {
+                    this.currentValue = num;
+                    this.shouldResetScreen = false;
+                } else {
+                    this.currentValue = this.currentValue === '0' ? num : this.currentValue + num;
+                }
+                this.updateDisplay();
+            }
+            
+            inputDecimal() {
+                if (this.shouldResetScreen) {
+                    this.currentValue = '0.';
+                    this.shouldResetScreen = false;
+                } else if (!this.currentValue.includes('.')) {
+                    this.currentValue += '.';
+                }
+                this.updateDisplay();
+            }
+            
+            setOperator(op) {
+                if (this.operator && !this.shouldResetScreen) {
+                    this.calculate();
+                }
+                this.previousValue = this.currentValue;
+                this.operator = op;
+                this.shouldResetScreen = true;
+                this.updateDisplay();
+            }
+            
+            handleAction(action, value) {
+                switch (action) {
+                    case 'clear':
+                        this.clear();
+                        break;
+                    case 'backspace':
+                        this.backspace();
+                        break;
+                    case 'operator':
+                        this.setOperator(value);
+                        break;
+                    case 'equals':
+                        this.calculate();
+                        break;
+                    case 'decimal':
+                        this.inputDecimal();
+                        break;
+                    case 'percent':
+                        this.percent();
+                        break;
+                    case 'negate':
+                        this.negate();
+                        break;
+                }
+            }
+            
+            clear() {
+                this.currentValue = '0';
+                this.previousValue = '';
+                this.operator = null;
+                this.shouldResetScreen = false;
+                this.updateDisplay();
+            }
+            
+            backspace() {
+                if (this.currentValue.length > 1) {
+                    this.currentValue = this.currentValue.slice(0, -1);
+                } else {
+                    this.currentValue = '0';
+                }
+                this.updateDisplay();
+            }
+            
+            calculate() {
+                if (!this.operator || !this.previousValue) return;
+                
+                const prev = parseFloat(this.previousValue);
+                const current = parseFloat(this.currentValue);
+                let result;
+                
+                switch (this.operator) {
+                    case '+':
+                        result = prev + current;
+                        break;
+                    case '-':
+                        result = prev - current;
+                        break;
+                    case '*':
+                        result = prev * current;
+                        break;
+                    case '/':
+                        if (current === 0) {
+                            this.currentValue = 'Error';
+                            this.previousValue = '';
+                            this.operator = null;
+                            this.updateDisplay();
+                            return;
+                        }
+                        result = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+                
+                // 小数点以下の処理
+                result = Math.round(result * 1000000000) / 1000000000;
+                
+                this.currentValue = String(result);
+                this.previousValue = '';
+                this.operator = null;
+                this.shouldResetScreen = true;
+                this.updateDisplay();
+            }
+            
+            percent() {
+                this.currentValue = String(parseFloat(this.currentValue) / 100);
+                this.updateDisplay();
+            }
+            
+            negate() {
+                this.currentValue = String(parseFloat(this.currentValue) * -1);
+                this.updateDisplay();
+            }
+            
+            updateDisplay() {
+                this.resultEl.textContent = this.formatNumber(this.currentValue);
+                
+                if (this.previousValue && this.operator) {
+                    const opSymbol = this.getOperatorSymbol(this.operator);
+                    this.expressionEl.textContent = `${this.formatNumber(this.previousValue)} ${opSymbol}`;
+                } else {
+                    this.expressionEl.textContent = '';
+                }
+            }
+            
+            formatNumber(num) {
+                if (num === 'Error') return num;
+                
+                const parts = num.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return parts.join('.');
+            }
+            
+            getOperatorSymbol(op) {
+                const symbols = {
+                    '+': '+',
+                    '-': '−',
+                    '*': '×',
+                    '/': '÷'
+                };
+                return symbols[op] || op;
+            }
+        }
+        
+        // カスタムエレメントの読み込みを待ってから初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            // mwc.js の読み込み完了を待つ
+            setTimeout(() => {
+                new Calculator();
+            }, 100);
+        });
+        
+        // iframe メッセージ対応（親ウィンドウとの通信）
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'calculator') {
+                console.log('Received message:', event.data);
+            }
+        });
+        
+        // 計算結果を親ウィンドウに通知
+        const originalUpdateDisplay = Calculator.prototype.updateDisplay;
+        Calculator.prototype.updateDisplay = function() {
+            originalUpdateDisplay.call(this);
+            
+            // 親ウィンドウに計算結果を送信
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'calculator',
+                    action: 'update',
+                    value: this.currentValue,
+                    expression: this.expressionEl.textContent
+                }, '*');
+            }
+        };
+    </script>
+</body>
+</html>
