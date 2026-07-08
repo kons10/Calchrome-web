@@ -222,7 +222,7 @@
             
             inputNumber(num) {
                 // 最大入力桁数の制限（15 桁）
-                if (this.currentValue.replace('.', '').replace('-', '').length >= 15) {
+                if (!this.shouldResetScreen && this.currentValue.replace('.', '').replace('-', '').length >= 15) {
                     return;
                 }
                 
@@ -338,6 +338,7 @@
                     this.currentValue = 'Error';
                     this.previousValue = '';
                     this.operator = null;
+                    this.shouldResetScreen = true;
                     this.updateDisplay();
                     return;
                 }
