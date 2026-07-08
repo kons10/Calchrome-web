@@ -198,10 +198,13 @@
                 if (/[0-9]/.test(key)) {
                     this.inputNumber(key);
                 } else if (key === '+') {
+                    e.preventDefault();
                     this.setOperator('+');
                 } else if (key === '-') {
+                    e.preventDefault();
                     this.setOperator('-');
                 } else if (key === '*' || key === 'x') {
+                    e.preventDefault();
                     this.setOperator('*');
                 } else if (key === '/') {
                     e.preventDefault();
