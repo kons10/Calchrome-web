@@ -303,6 +303,10 @@
       "description": "Calculator name of application for performing simple calculations",
       "message": "ChromiumOS Calculator"
    },
+   "Calc_Message_Description": {
+      "description": "Calculator description",
+      "message": "ChromiumOS default calculator, fixed by Alex313031!"
+   },
    "Calc_Message_ShortName": {
       "description": "Calculator short name of application for performing simple calculations",
       "message": "Calculator"
