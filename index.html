@@ -178,17 +178,21 @@
             init() {
                 // ボタンイベントのバインディング
                 document.querySelectorAll('md-outlined-button').forEach(button => {
-                    // click イベントと touch イベントの両方に対応
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        this.handleButtonClick(button);
-                    }, { passive: true });
-                    
-                    // タッチデバイス向けの追加サポート
-                    button.addEventListener('touchend', (e) => {
+                    // pointerup イベントを使用してマウス・タッチ両方に対応
+                    button.addEventListener('pointerup', (e) => {
                         e.preventDefault();
                         this.handleButtonClick(button);
                     }, { passive: false });
+                    
+                    // キーボード操作のための click イベントも維持
+                    button.addEventListener('click', (e) => {
+                        // pointerup で処理済みの場合はスキップ
+                        if (e.pointerType) {
+                            e.preventDefault();
+                            return;
+                        }
+                        this.handleButtonClick(button);
+                    }, { passive: true });
                 });
                 
                 // キーボードサポート
