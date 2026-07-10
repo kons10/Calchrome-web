@@ -79,6 +79,8 @@
             height: 100%;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
         }
         
         md-outlined-button:hover {
@@ -92,6 +94,11 @@
         md-outlined-button:focus-visible {
             outline: 2px solid #2196f3;
             outline-offset: 2px;
+        }
+        
+        /* ボタンクリック時のデフォルト動作を防止 */
+        md-outlined-button::part(base) {
+            pointer-events: auto;
         }
         
         .operator-btn {
@@ -167,14 +174,37 @@
             init() {
                 // ボタンイベントのバインディング
                 document.querySelectorAll('md-outlined-button').forEach(button => {
+                    // クリックイベント
                     button.addEventListener('click', (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         this.handleButtonClick(button);
+                    });
+                    
+                    // タッチデバイスのための追加イベント（二重発火防止）
+                    let touchHandled = false;
+                    button.addEventListener('touchstart', (e) => {
+                        touchHandled = true;
+                        e.preventDefault();
+                        this.handleButtonClick(button);
+                    }, { passive: false });
+                    
+                    // マウスダウンイベントも追加（より確実なボタン操作）
+                    button.addEventListener('mousedown', (e) => {
+                        if (!touchHandled) {
+                            e.preventDefault();
+                            this.handleButtonClick(button);
+                        }
+                        touchHandled = false;
                     });
                 });
                 
                 // キーボードサポート
                 document.addEventListener('keydown', (e) => {
+                    // Function キー（F1-F12）は無視
+                    if (e.key.startsWith('F') && e.key.length >= 2 && !isNaN(e.key.charAt(1))) {
+                        return;
+                    }
                     this.handleKeyPress(e);
                 });
                 
@@ -194,6 +224,11 @@
             
             handleKeyPress(e) {
                 const key = e.key;
+                
+                // Function キー（F1-F12）は無視
+                if (key.startsWith('F') && key.length >= 2 && !isNaN(key.charAt(1))) {
+                    return;
+                }
                 
                 if (/[0-9]/.test(key)) {
                     this.inputNumber(key);
@@ -413,9 +448,14 @@
         // カスタムエレメントの読み込みを待ってから初期化
         window.addEventListener('DOMContentLoaded', () => {
             // mwc.js の読み込み完了を待つ
-            setTimeout(() => {
-                new Calculator();
-            }, 100);
+            const initCalculator = () => {
+                if (customElements.get('md-outlined-button')) {
+                    new Calculator();
+                } else {
+                    setTimeout(initCalculator, 50);
+                }
+            };
+            initCalculator();
         });
         
         // iframe メッセージ対応（親ウィンドウとの通信）
