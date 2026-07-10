@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>計算機アプリ</title>
     <style>
         * {
@@ -23,6 +23,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            touch-action: none;
+            -webkit-touch-callout: none;
         }
         
         .calculator-container {
@@ -79,6 +81,10 @@
             height: 100%;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         
         md-outlined-button:hover {
@@ -92,6 +98,11 @@
         md-outlined-button:focus-visible {
             outline: 2px solid #2196f3;
             outline-offset: 2px;
+        }
+        
+        /* タッチデバイスでのタップハイライトを抑制 */
+        md-outlined-button::-moz-focus-inner {
+            border: 0;
         }
         
         .operator-btn {
@@ -167,10 +178,17 @@
             init() {
                 // ボタンイベントのバインディング
                 document.querySelectorAll('md-outlined-button').forEach(button => {
+                    // click イベントと touch イベントの両方に対応
                     button.addEventListener('click', (e) => {
                         e.preventDefault();
                         this.handleButtonClick(button);
-                    });
+                    }, { passive: true });
+                    
+                    // タッチデバイス向けの追加サポート
+                    button.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        this.handleButtonClick(button);
+                    }, { passive: false });
                 });
                 
                 // キーボードサポート
@@ -182,6 +200,15 @@
             }
             
             handleButtonClick(button) {
+                // ダブルタップや重複イベントを防止
+                if (button.dataset.processing === 'true') {
+                    return;
+                }
+                button.dataset.processing = 'true';
+                setTimeout(() => {
+                    button.dataset.processing = 'false';
+                }, 100);
+                
                 const value = button.getAttribute('data-value');
                 const action = button.getAttribute('data-action');
                 
