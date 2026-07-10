@@ -177,22 +177,24 @@
             
             init() {
                 // ボタンイベントのバインディング
+                let lastPointerUpTime = 0;
+                
                 document.querySelectorAll('md-outlined-button').forEach(button => {
                     // pointerup イベントを使用してマウス・タッチ両方に対応
                     button.addEventListener('pointerup', (e) => {
                         e.preventDefault();
+                        lastPointerUpTime = Date.now();
                         this.handleButtonClick(button);
                     }, { passive: false });
                     
                     // キーボード操作のための click イベントも維持
                     button.addEventListener('click', (e) => {
-                        // pointerup で処理済みの場合はスキップ
-                        if (e.pointerType) {
-                            e.preventDefault();
+                        // pointerup の直後（100ms 以内）はスキップして重複実行を防止
+                        if (Date.now() - lastPointerUpTime < 100) {
                             return;
                         }
                         this.handleButtonClick(button);
-                    }, { passive: true });
+                    });
                 });
                 
                 // キーボードサポート
